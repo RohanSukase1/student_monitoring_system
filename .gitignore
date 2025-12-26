@@ -1,1 +1,23 @@
-env/ 
+# virtual environment
+env/
+
+# python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# datasets (local only)
+datasets/
+
+# trained models
+models/
+*.pt
+*.onnx
+
+# logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
