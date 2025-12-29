@@ -6,7 +6,7 @@ import os
 import time
 import numpy as np
 model=YOLO("yolov8n-pose.pt")
-model2=YOLO("C:\\Users\\acer\\Desktop\\project\\best.pt")
+model2=YOLO("D:/Projects/student_monitoring_system/models/id_card_model.pt")
 def distance(p1, p2):
     return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) ** 0.5
 
@@ -23,7 +23,7 @@ def blur_score(image):
 
 #     eye_y_diff = abs(left_eye[1] - right_eye[1])
 
-#     # If eyes are not level → face rotated
+#     # If eyes are not level → face rotat
 #     if eye_y_diff > 15:
 #         return False
 
@@ -65,8 +65,14 @@ best_image= None
 folder = "captured_images"
 if not os.path.exists(folder):
     os.mkdir(folder)
-cap = cv2.VideoCapture(0)
 
+
+folder1 = "detected_images"
+if not os.path.exists(folder1):
+    os.mkdir(folder1)
+
+url="http://10.177.34.20:8080/video"
+cap = cv2.VideoCapture(url)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 saved_id=set()
@@ -82,7 +88,7 @@ while True:
         frame,
         persist=True,
         tracker="botsort.yaml",
-        conf=0.75,
+        conf=0.70,
         iou=0.6,
         classes=[0]  # person only
     )
@@ -128,8 +134,8 @@ while True:
                 continue
 
             face_visible = (
-                keypoint_visible(keypoints, conf, 0) or  # nose
-                keypoint_visible(keypoints, conf, 1) or  # left eye
+                keypoint_visible(keypoints, conf, 0) and  # nose
+                keypoint_visible(keypoints, conf, 1) or # left eye
                 keypoint_visible(keypoints, conf, 2)      # right eye
             )
             if not face_visible:
@@ -201,7 +207,7 @@ while True:
 
             score = blur_score(person_crop)
                 # store frames temporarily
-            min_blur = 40 if shoulder_width < 100 else 60
+            min_blur = 20 if shoulder_width < 100 else 60
             if score < min_blur:
                 continue
             if track_id not in frame_buffer:
@@ -225,14 +231,28 @@ while True:
                 saved_id.add(track_id)
                 del frame_buffer[track_id]
 
+                
+                # id_result=model2(source=best_image,conf=0.0001)
+                # filename1=f'{folder1}/person_{track_id}_detections.jpg'
+                # image=id_result[0].plot()
+                # cv2.imwrite(filename1,image)
                 results_id = model2(best_image)
+
+                
                 for r in results_id:
                     for box in r.boxes:
                         cls_id = int(box.cls[0])
                         conf = float(box.conf[0])
-                        print(f"id card detected  Detected: {model2.names[cls_id]}  |  Confidence: {conf:.2f}")
-                        break
+
+                        if model2.names[cls_id] == "id_card" and conf > 0.000001:
+                            filename = f"{folder1}/person_{track_id}.jpg"
+                            image=results_id[0].plot()
+                            cv2.imwrite(filename,image)
+                            
+
                 
+
+
     
     cv2.putText(
     frame_show,
