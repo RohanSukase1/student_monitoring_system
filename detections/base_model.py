@@ -4,9 +4,9 @@ import cv2
 import math
 import os
 import time
-
+import numpy as np
 model=YOLO("yolov8n-pose.pt")
-model2=YOLO("D:/Projects/student_monitoring_system/models/id_card_model.pt")
+model2=YOLO("C:\\Users\\acer\\Desktop\\project\\best.pt")
 def distance(p1, p2):
     return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2) ** 0.5
 
@@ -14,32 +14,43 @@ def blur_score(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     return cv2.Laplacian(gray, cv2.CV_64F).var()
 
-def is_face_visible(keypoints):
-    nose = keypoints[0]
-    left_eye = keypoints[1]
-    right_eye = keypoints[2]
 
-    # All face keypoints must exist
-    if nose[0] <= 0.1 or nose[1] <= 1:
-        return False
-    if left_eye[0] <= 0.1 or left_eye[1] <= 1:
-        return False
-    if right_eye[0] <= 0.1 or right_eye[1] <= 1:
-        return False
+# new function for keypoint visible
 
-    return True
+# def is_front_facing(keypoints):
+#     left_eye = keypoints[1]
+#     right_eye = keypoints[2]
 
-def is_front_facing(keypoints):
-    left_eye = keypoints[1]
-    right_eye = keypoints[2]
+#     eye_y_diff = abs(left_eye[1] - right_eye[1])
 
-    eye_y_diff = abs(left_eye[1] - right_eye[1])
+#     # If eyes are not level → face rotated
+#     if eye_y_diff > 15:
+#         return False
 
-    # If eyes are not level → face rotated
-    if eye_y_diff > 15:
-        return False
+#     return True
 
-    return True
+
+def keypoint_visible(keypoints, conf, idx, min_conf=0.60):
+    return (
+        conf[idx] > min_conf and
+        keypoints[idx][0] > 0 and
+        keypoints[idx][1] > 0
+    )
+def Ankle_knee_visible(keypoints, conf, idx, min_conf=0.65):
+    return (
+        conf[idx] > min_conf and
+        keypoints[idx][0] > 0 and
+        keypoints[idx][1] > 0
+    )
+# def enhance_image(image):
+#     # Sharpening kernel
+#     kernel = np.array([[0, -1, 0],
+#                        [-1, 5, -1],
+#                        [0, -1, 0]])
+    
+#     sharp = cv2.filter2D(image, -1, kernel)
+#     return sharp
+
 
     
 
@@ -54,10 +65,13 @@ best_image= None
 folder = "captured_images"
 if not os.path.exists(folder):
     os.mkdir(folder)
+cap = cv2.VideoCapture(0)
 
-cap=cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 saved_id=set()
 current_ids = set()
+
 
 
 while True:
@@ -104,14 +118,43 @@ while True:
             r_hip= keypoints[12]
             l_knee=keypoints[13]
             r_knee=keypoints[14]
-            knee=keypoints[14]
             l_ankle=keypoints[15]
             r_ankle=keypoints[16]
 
             
 
-            if nose[0] <=300 and l_eye[0] <= 300 and r_eye[0] <= 300:
+            if nose[0] <=0 and l_eye[0] <= 0 and r_eye[0] <= 0:
                 print("not  Front face detected")
+                continue
+
+            face_visible = (
+                keypoint_visible(keypoints, conf, 0) or  # nose
+                keypoint_visible(keypoints, conf, 1) or  # left eye
+                keypoint_visible(keypoints, conf, 2)      # right eye
+            )
+            if not face_visible:
+                print(" Face not visible")
+                continue
+
+            knee_visible=(
+                Ankle_knee_visible(keypoints,conf,13) or
+                Ankle_knee_visible(keypoints, conf,14)
+            )
+
+            if not knee_visible:
+                print("knee not visible")
+                continue
+            # Allow at least ONE ankle visible
+
+            ankle_visible =(
+                Ankle_knee_visible(keypoints, conf,15) or
+                Ankle_knee_visible(keypoints, conf, 16)
+
+                
+            )
+
+            if not ankle_visible:
+                print("ankle not visible")
                 continue
 
 
@@ -125,15 +168,6 @@ while True:
                 if part[0]<=0 or part[1]<0:
                     continue
             
-            # Allow at least ONE ankle visible
-            ankle_visible = (
-            (l_ankle[0] > 0 and l_ankle[1] > 0) or
-            (r_ankle[0] > 0 and r_ankle[1] > 0)
-                 )
-
-            if not ankle_visible:
-                continue
-            
 
             eye_diff = abs(l_eye[1] - r_eye[1])
             shoulder_diff = abs(l_shoulder[1] - r_shoulder[1])
@@ -141,30 +175,24 @@ while True:
             shoulder_width = distance(l_shoulder, r_shoulder)
             body_height = distance(nose, l_ankle)
 
-            knee_visible = (
-            (l_knee[0] > 0 and l_knee[1] > 0) or
-            (r_knee[0] > 0 and r_knee[1] > 0)
-                 )
-            if not knee_visible:
-                continue
+            
 
-            if not is_face_visible(keypoints):
-                continue
-            if not is_front_facing(keypoints):
-                continue
+            
+            # if not is_front_facing(keypoints):
+                # continue
 
 
             if body_height ==0:
                 continue
 
-            width_ratio = shoulder_width / body_height
+            # width_ratio = shoulder_width / body_height
 
-            print(f" _width_ratio :{width_ratio}")
+            # print(f" _width_ratio :{width_ratio}")
 
             
 
-            if width_ratio < 0.10 or width_ratio > 0.60:
-                continue
+            # if width_ratio < 0.20 or width_ratio > 0.60:
+            #     continue
         
 
             person_crop = frame[y1:y2, x1:x2]
@@ -173,7 +201,7 @@ while True:
 
             score = blur_score(person_crop)
                 # store frames temporarily
-            min_blur = 20 if shoulder_width < 100 else 50
+            min_blur = 40 if shoulder_width < 100 else 60
             if score < min_blur:
                 continue
             if track_id not in frame_buffer:
@@ -189,8 +217,10 @@ while True:
                 
             if len(frame_buffer[track_id]) == 3:
                 best_image = frame_buffer[track_id][0][1]
+                # best_image2 = enhance_image(best_image)
+
                 filename = f"{folder}/person_{track_id}.jpg"
-                cv2.imwrite(filename, best_image)
+                cv2.imwrite(filename,best_image)
                 print(" Saved sharp image:", filename)
                 saved_id.add(track_id)
                 del frame_buffer[track_id]
@@ -200,7 +230,8 @@ while True:
                     for box in r.boxes:
                         cls_id = int(box.cls[0])
                         conf = float(box.conf[0])
-                        print(f"🆔 Detected: {model2.names[cls_id]}  |  Confidence: {conf:.2f}")
+                        print(f"id card detected  Detected: {model2.names[cls_id]}  |  Confidence: {conf:.2f}")
+                        break
                 
     
     cv2.putText(
