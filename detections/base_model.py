@@ -30,7 +30,7 @@ def blur_score(image):
 #     return True
 
 
-def keypoint_visible(keypoints, conf, idx, min_conf=0.60):
+def keypoint_visible(keypoints, conf, idx, min_conf=0.70):
     return (
         conf[idx] > min_conf and
         keypoints[idx][0] > 0 and
@@ -71,10 +71,10 @@ folder1 = "detected_images"
 if not os.path.exists(folder1):
     os.mkdir(folder1)
 
-url="http://10.177.34.20:8080/video"
-cap = cv2.VideoCapture(url)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+# url="http://10.177.34.20:8080/video"
+cap = cv2.VideoCapture(2)
+# cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+# cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 saved_id=set()
 current_ids = set()
 
@@ -225,7 +225,7 @@ while True:
                 best_image = frame_buffer[track_id][0][1]
                 # best_image2 = enhance_image(best_image)
 
-                filename = f"{folder}/person_{track_id}.jpg"
+                filename = f"{folder}/person_{track_id}.png"
                 cv2.imwrite(filename,best_image)
                 print(" Saved sharp image:", filename)
                 saved_id.add(track_id)
@@ -244,8 +244,8 @@ while True:
                         cls_id = int(box.cls[0])
                         conf = float(box.conf[0])
 
-                        if model2.names[cls_id] == "id_card" and conf > 0.000001:
-                            filename = f"{folder1}/person_{track_id}.jpg"
+                        if model2.names[cls_id] == "id_card" and conf > 0.01:
+                            filename = f"{folder1}/person_{track_id}.png"
                             image=results_id[0].plot()
                             cv2.imwrite(filename,image)
                             
