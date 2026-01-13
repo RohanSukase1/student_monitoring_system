@@ -1,4 +1,5 @@
 from flask import Flask, Response, render_template
+import torch
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -10,19 +11,23 @@ import atexit
 from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
+from insightface.app import FaceAnalysis
+from datetime import datetime
 
 
 
 # ---------------- MODELS ----------------
 model = YOLO("yolov8n-pose.pt")
 model2 = YOLO("D:\\Projects\\student_monitoring_system\models\\id_card_model.pt")
+face_app = FaceAnalysis(name="buffalo_l")
+face_app.prepare(ctx_id=-1)   # CPU mode
 
 # ---------------- CAMERA ----------------
-# url="http://10.142.236.225:8080/video"
-# cap = cv2.VideoCapture(url)
-cap=cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+url="http://10.252.221.17:8080/video"
+cap = cv2.VideoCapture(url)
+# cap=cv2.VideoCapture(0,cv2.CAP_DSHOW)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1080)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
 ui_count = {
     "is_online":1,
@@ -41,6 +46,7 @@ def release_camera():
 saved_id = set()
 current_ids = set()
 frame_buffer = {}
+latest_counts = {}
 
 folder = "captured_images"
 folder2 = "id_card_detection"
@@ -48,6 +54,68 @@ os.makedirs(folder, exist_ok=True)
 os.makedirs(folder2, exist_ok=True)
 
 # ---------------- UTILS ----------------
+def save_face_image(face_crop, name, base_path=".", is_recognized=True):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+
+    if is_recognized:
+        folder = os.path.join(base_path, "recognized_faces", name)
+    else:
+        folder = os.path.join(base_path, "unrecognized_faces")
+
+    os.makedirs(folder, exist_ok=True)
+
+    filename = f"{name}_{timestamp}.jpg" if is_recognized else f"unknown_{timestamp}.jpg"
+    save_path = os.path.join(folder, filename)
+
+    cv2.imwrite(save_path, face_crop)
+    print("Saved:", save_path)
+
+def cosine_similarity(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+
+def recognize_face_from_crop(face_crop, threshold=0.5):
+    faces = face_app.get(face_crop)
+
+    if len(faces) == 0:
+        return "No Face", 0.0
+
+    # Take the largest detected face in crop
+    face = max(faces, key=lambda f: (f.bbox[2]-f.bbox[0]) * (f.bbox[3]-f.bbox[1]))
+    emb = face.embedding
+
+    if len(db_embeddings) == 0:
+        return "No Database", 0.0
+
+    sims = [cosine_similarity(emb, db_emb) for db_emb in db_embeddings]
+    best_index = np.argmax(sims)
+    best_score = sims[best_index]
+
+    if best_score >= threshold:
+        return db_names[best_index], float(best_score)
+    else:
+        return "Unknown", float(best_score)
+
+def load_face_database(db_path="face_embeddings/"):
+    embeddings = []
+    names = []
+
+    for person in os.listdir(db_path):
+        person_folder = os.path.join(db_path, person)
+        if not os.path.isdir(person_folder):
+            continue
+
+        for file in os.listdir(person_folder):
+            if file.endswith(".npy"):
+                emb = np.load(os.path.join(person_folder, file))
+                embeddings.append(emb)
+                names.append(person)
+
+    print("Loaded identities:", set(names))
+    return embeddings, names
+
+db_embeddings, db_names = load_face_database()
+
 def reset_ui_count():
     ui_count["shirt_tucked"] = 0
     ui_count["shirt_untucked"] = 0
@@ -72,6 +140,12 @@ def ankle_knee_visible(keypoints, conf, idx, min_conf=0.65):
 
 # ---------------- VIDEO STREAM ----------------
 def get_frames():
+    
+
+    def update_counts():
+      global latest_counts
+      latest_counts = ui_count.copy()
+
     global saved_id, frame_buffer, current_ids
     while True:
         if not cap.isOpened():
@@ -176,6 +250,20 @@ def get_frames():
 
                     cv2.imwrite(f"{folder}/id_{track_id}_{time}.png", best_image)
 
+                    #face recognition 
+                    face_crop = best_image  # ensure this is the FACE region only
+
+                    name, score = recognize_face_from_crop(face_crop, threshold=0.5)
+
+                    if name != "Unknown" and name != "No Face":
+                    # Save recognized face
+                       save_face_image(face_crop, name, base_path=".", is_recognized=True)
+                       label = f"{name} ({score:.2f})"
+                    else:
+                    # Save unrecognized face
+                       save_face_image(face_crop, "unknown", base_path=".", is_recognized=False)
+                       label = "Unknown"
+
                     # -------- ID CARD --------
                     id_found = False
                     try:
@@ -226,6 +314,7 @@ def get_frames():
 
         _, buffer = cv2.imencode(".jpg", frame_show)
         frame_bytes = buffer.tobytes()
+        update_counts()
 
         yield (b"--frame\r\n"
                b"Content-Type: image/jpeg\r\n\r\n" +
@@ -243,7 +332,7 @@ from flask import jsonify
 
 @app.route("/count")
 def counts():
-    return jsonify(ui_count)
+    return jsonify(latest_counts)
 # ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False,threaded=True)
