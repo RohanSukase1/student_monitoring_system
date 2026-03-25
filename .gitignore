@@ -1,23 +1,47 @@
-# virtual environment
-env/
-
-# python cache
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
 
-# datasets (local only)
-datasets/
+# Virtual env
+env/
+# IDE
+.vscode/
+.idea/
 
-# trained models
-models/
+# Logs / temp
+*.log
+*.tmp
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# Generated images / outputs
+backend/face_images/
+backend/captured_images/
+backend/output1/
+backend/output/
+backend/media/
+backend/uploads/
+
+# Model / large binaries
+*.pb
 *.pt
+*.pth
+*.h5
+*.pkl
+*.joblib
 *.onnx
 
-# logs
-*.log
-
-# OS junk
-.DS_Store
-Thumbs.db
-
+# Archives / videos
+*.zip
+*.rar
+*.7z
+*.mp4
+*.avi
+*.mov
+*.mkv
