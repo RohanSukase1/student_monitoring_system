@@ -49,3 +49,5 @@ backend/uploads/
 *.avi
 *.mov
 *.mkv
+
+.gitignore
