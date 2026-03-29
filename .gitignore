@@ -19,6 +19,10 @@ env/
 *.db-wal
 *.db-shm
 *.sqlite3
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
 
 # Generated images / outputs
 backend/face_images/
