@@ -184,7 +184,7 @@ face_app.prepare(ctx_id=1)   # CPU mode
 
 # url = "http://10.69.223.41:8080/video"
 url = "http://10.119.130.31:8080/video"
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
