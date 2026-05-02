@@ -76,16 +76,25 @@ Two dashboards are designed for better usability:
 ## Project Screenshots
 
 <img width="1920" height="1080" alt="Screenshot (74)" src="https://github.com/user-attachments/assets/e96a6413-80f9-4160-aa5f-fc44a24813ef" />
+
 <img width="1920" height="1080" alt="Screenshot 2026-02-26 211757" src="https://github.com/user-attachments/assets/d7e2e751-2048-47dd-9c43-0aef624eaaf2" />
+
 <img width="1920" height="1080" alt="Screenshot (93)" src="https://github.com/user-attachments/assets/c6f9190c-13f8-4bc4-9c50-8bac5bf8a680" />
+
 <img width="1920" height="1080" alt="Screenshot (76)" src="https://github.com/user-attachments/assets/67877f98-126b-4712-ba49-4e593ab7f07f" />
 
 <img width="1920" height="1080" alt="Screenshot (84)" src="https://github.com/user-attachments/assets/86a9a447-630f-4963-b13a-7f84ecf4471b" />
+
 <img width="1920" height="1080" alt="Screenshot (79)" src="https://github.com/user-attachments/assets/daebb35a-4ea9-4f02-99cd-5372831f9f81" />
+
 <img width="1920" height="1080" alt="Screenshot (80)" src="https://github.com/user-attachments/assets/307f98f5-16a5-4b4d-808a-5359c2e43fd1" />
+
 <img width="1920" height="1080" alt="Screenshot (81)" src="https://github.com/user-attachments/assets/c2977d61-9f53-4e1f-a0e5-33de2e9985dc" />
+
 <img width="1920" height="1080" alt="Screenshot (82)" src="https://github.com/user-attachments/assets/00e18f3c-be16-4576-afac-65b85d0ee804" />
+
 <img width="1920" height="1080" alt="Screenshot (83)" src="https://github.com/user-attachments/assets/c2a60f8b-0d78-4cd8-ac24-2ae521f48f0b" />
+
 <img width="1920" height="1080" alt="Screenshot (94)" src="https://github.com/user-attachments/assets/e1ccdee9-0ca4-4dfe-a608-c195b77b27c7" />
 
 
